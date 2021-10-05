@@ -1,0 +1,21 @@
+{
+    "configurations": [{
+        "name": "Win32",
+        "includePath": [
+            "../../library/header"
+        ],
+        "defines": [
+            "_DEBUG",
+            "UNICODE",
+            "_UNICODE"
+        ],
+        "intelliSenseMode": "msvc-x64",
+        "browse": {
+            "path": [
+            ],
+            "limitSymbolsToIncludedHeaders": true,
+            "databaseFilename": ""
+        }
+    }],
+    "version": 4
+}
