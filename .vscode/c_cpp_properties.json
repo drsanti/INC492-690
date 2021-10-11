@@ -3,7 +3,6 @@
         {
             "name": "xc16-gcc",
             "includePath": [
-                "../library/**",
                 "C:/ecc-lab/embedded/compilers/xc16/**",
                 "${workspaceFolder}/**"
             ],
