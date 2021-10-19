@@ -8,7 +8,7 @@ void Byte_Received(void* event)
 {
     uart_event_t* evt = (uart_event_t*)event;
     data_buffer[data_counter++] = evt->byte;
-    if(evt->byte == ';' || evt->byte == '\n')  {
+    if(evt->byte == ';' || evt->byte == '\n') {
         Uart1_SetRxCallback(NULL);
         data_buffer[data_counter] = 0;
         data_counter = 0;
@@ -17,8 +17,7 @@ void Byte_Received(void* event)
 }
 
 void Timer_Callback(void* event) {
-    if(data_ready == 1)
-    {
+    if(data_ready == 1) {
         data_ready = 0;   
         Uart1_PrintfAsync("Received data: %s\r\n", data_buffer);  
         Uart1_SetRxCallback(Byte_Received);
