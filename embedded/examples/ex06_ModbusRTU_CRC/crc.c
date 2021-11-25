@@ -47,3 +47,4 @@ uint16_t ModbusCRC (const uint8_t *pData, uint16_t length) {
     }
     return (crc>>8)|(crc<<8);
 }
+

@@ -9,3 +9,6 @@ uint8_t ModbusLRC (uint8_t *pData, uint16_t length)
     }
     return (uint8_t)(-lrc);
 } 
+
+
+

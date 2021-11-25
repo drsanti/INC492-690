@@ -1,8 +1,10 @@
 #include <ecc.h>
 
-uint8_t     buffer[256];    // RTU Data
-uint16_t    counter = 0;    // Byte Counter
-uint16_t    ticks = 0;      // Timer Ticks
+uint8_t     buffer[256];        // RTU Data
+uint16_t    counter = 0;        // Byte Counter
+uint16_t    ticks = 0;          // Timer Ticks
+
+uint8_t     buffer_r[256];      // Response buffer
 
 uint16_t CalculateModbusCRC(uint8_t *pData, uint16_t length)
 {
@@ -52,6 +54,32 @@ uint16_t CalculateModbusCRC(uint8_t *pData, uint16_t length)
 }
 
 
+void FunctionCode01() {
+
+    uint16_t coilAddr = (uint16_t)(buffer[2]<<8);
+    coilAddr |= (uint16_t)buffer[3];
+
+    uint16_t quantity = (uint16_t)(buffer[4]<<8);
+    quantity |= (uint16_t)buffer[5];
+
+    uint8_t coils = 0x00;
+    int8_t i;
+    for(i=0; i<quantity; i++) {
+        uint8_t id = (coilAddr-1) + i;
+        uint8_t cs = Led_Get(id);
+        coils |= cs<<i;
+    }
+
+    buffer_r[0] = buffer[0];            // Slave Address
+    buffer_r[1] = buffer[1];            // Function Code
+    buffer_r[2] = 1;                    // Byte Count
+    buffer_r[3] = 0;                    // Data High
+    buffer_r[4] = coils;                // Data Low
+    uint16_t crc = CalculateModbusCRC(buffer_r, 5);
+    buffer_r[5] = (uint8_t)(crc>>8);    // CRC Low
+    buffer_r[6] = (uint8_t)(crc&0xFF);  // CRC High
+    Uart1_WriteBytes((char *)buffer_r, 7);
+}
 
 void Interpreter(void) {
 
@@ -59,14 +87,14 @@ void Interpreter(void) {
        
         uint16_t crcM = (buffer[6]<<8) | buffer[7];
         uint16_t crcC = CalculateModbusCRC(buffer, 6);
-        Uart2_Printf("CRC: 0x%.4X 0x%.4X\r\n", crcC, crcM);
-        if(crcM != crcC) {
-            Uart2_Printf("Data Frame Error!!\r\n");    
-        }
 
-        if( buffer[1] >= 1 &&  buffer[1] <= 4 ) {       // FC 0x01-0x04
-            
-           
+        if(crcM != crcC) {
+            // Error 
+        }
+        else if( buffer[1] >= 1 &&  buffer[1] <= 4 ) {       // FC 0x01-0x04
+            if(buffer[1] == 1) {
+                FunctionCode01();
+            }     
         }
         else if( buffer[1] >= 5 &&  buffer[1] <= 6 ) {  // FC 0x05-0x06
             
@@ -81,12 +109,11 @@ void Interpreter(void) {
         uint8_t bc = buffer[6];
         uint16_t crcM = (buffer[7+bc]<<8) | buffer[8+bc];
         uint16_t crcC = CalculateModbusCRC(buffer, 7+bc);
-        Uart2_Printf("CRC: 0x%.4X 0x%.4X\r\n", crcC, crcM);
-        if(crcM != crcC) {
-            Uart2_Printf("Data Frame Error!!\r\n");    
-        }
 
-        if( buffer[1] >= 15 &&  buffer[1] <= 16 ){      // FC 0x0F-0x10
+        if(crcM != crcC) {
+            // Error      
+        }
+        else if( buffer[1] >= 15 &&  buffer[1] <= 16 ){      // FC 0x0F-0x10
             
            
         }
@@ -99,7 +126,6 @@ void Interpreter(void) {
     }
 
 }
-
 
 void Byte_Received(void* event) {
     uart_event_t* evt = (uart_event_t*)event;
@@ -121,9 +147,15 @@ void Timer_Callback(void* event) {
 
 int main(void) {
     System_Init();
-    Uart2_PrintfAsync("Modbus Interpreter Ready\r\n");  // UART2
+    Uart2_PrintfAsync("FC01 Read Coils\r\n");  // UART2
     Uart1_SetRxCallback(Byte_Received);
     Timer_Create(2, Timer_Callback);
+
+    Led_Set(0);
+    Led_Set(1);
+    Led_Set(2);
+    Led_Set(3);
+
     System_Start();
     return 0;
 }
